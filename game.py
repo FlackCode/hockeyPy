@@ -27,6 +27,11 @@ player2Pos = pygame.Vector2(screenWidth - playerSize.x - 10, screenHeight / 2 - 
 player2Vel = 0
 player2Accel = 0
 
+player1Score = 0
+player2Score = 0
+
+font = pygame.font.SysFont("Arial", 50)
+
 def clampBallVelocity(velocity, minValue, maxValue):
     return max(min(velocity, maxValue), minValue)
 
@@ -78,6 +83,18 @@ while running:
         ballPos.y = screenHeight - ballRadius
         ballVelY *= -1
 
+    if ballPos.x < 0:
+        player2Score += 1
+        ballPos = pygame.Vector2(screenWidth / 2, screenHeight / 2)
+        ballVelX = -ballVelX
+        ballVelY = 400
+
+    if ballPos.x > screenWidth:
+        player1Score += 1
+        ballPos = pygame.Vector2(screenWidth / 2, screenHeight / 2)
+        ballVelX = -ballVelX
+        ballVelY = 400
+    
     screen.fill("black")
     pygame.draw.circle(screen, "white", ballPos, ballRadius)
     pygame.draw.rect(screen, "white", pygame.Rect((player1Pos), (player1Size)))
@@ -86,6 +103,9 @@ while running:
     pygame.draw.circle(screen, "white", screenCenter, 150, 1)
     pygame.draw.circle(screen, "black", screenCenter, 125, 1)
     pygame.draw.line(screen, "white", (screenWidth / 2, 0), (screenWidth / 2, screenHeight), 1)
+
+    text = font.render(f"{player1Score} | {player2Score}", True, "white")
+    screen.blit(text, (screenWidth // 2 - text.get_width() // 2, 20))
     
     keys = pygame.key.get_pressed()
 

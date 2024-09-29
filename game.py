@@ -1,4 +1,5 @@
 import pygame
+from gameFunctions import *
 
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
@@ -14,8 +15,8 @@ accel = 10000
 
 ballPos = pygame.Vector2(screenWidth / 2, screenHeight / 2)
 ballRadius = 10
-ballVelX = 400
-ballVelY = 400
+ballVelX = 0
+ballVelY = 0
 
 player1Size = playerSize
 player1Pos = pygame.Vector2(10, screenHeight / 2 - (playerSize.y / 2)) 
@@ -29,52 +30,59 @@ player2Accel = 0
 
 player1Score = 0
 player2Score = 0
+winner = None
+gameStarted = False
 
 font = pygame.font.SysFont("Arial", 50)
 
-def clampBallVelocity(velocity, minValue, maxValue):
-    return max(min(velocity, maxValue), minValue)
+def resetGame():
+    global ballPos, ballVelX, ballVelY, player1Pos, player2Pos, player1Score, player2Score, winner
+    ballPos = pygame.Vector2(screenWidth / 2, screenHeight / 2)
+    ballVelX = 0
+    ballVelY = 0
+    player1Pos = pygame.Vector2(10, screenHeight / 2 - (playerSize.y / 2)) 
+    player2Pos = pygame.Vector2(screenWidth - playerSize.x - 10, screenHeight / 2 - (playerSize.y / 2))
+    player1Score = 0
+    player2Score = 0
+    winner = None
 
-def adjustBallVelocity(ballVelY, playerVel):
-    if ballVelY > 0 and playerVel > 0:
-        ballVelY += playerVel * 0.4
-    elif ballVelY < 0 and playerVel < 0:
-        ballVelY += playerVel * 0.4
-    elif ballVelY > 0 and playerVel < 0:
-        ballVelY += playerVel * 0.2
-    elif ballVelY < 0 and playerVel > 0:
-        ballVelY += playerVel * 0.2
-    return ballVelY
-
-def simulatePlayer(position, velocity, acceleration, deltaTime):
-        damping = 10
-        acceleration -= velocity * damping
-        position.y += velocity * deltaTime + acceleration * (deltaTime * deltaTime / 2)
-        velocity += acceleration * deltaTime
-
-        if position.y + playerSize.y > screenHeight:
-            position.y = screenHeight - playerSize.y
-            velocity = 0
-        elif position.y < 0:
-            position.y = 0
-            velocity = 0
-
-        return velocity 
-
-def BallIsColliding(playerPosition, playerSize, ballRadius, ballPosition):
-    collisionX = max(playerPosition.x, min(ballPosition.x, playerPosition.x + playerSize.x))
-    collisionY = max(playerPosition.y, min(ballPosition.y, playerPosition.y + playerSize.y))
-
-    distanceX = ballPosition.x - collisionX
-    distanceY = ballPosition.y - collisionY
-
-    return (distanceX ** 2 + distanceY ** 2) <= (ballRadius ** 2)
+def startGame():
+    global ballVelX, ballVelY
+    ballVelX = 400
+    ballVelY = 400
 
 while running:
     dt = clock.tick(144) * 0.001
+    keys = pygame.key.get_pressed()
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-    ballPos.x += ballVelX * dt
-    ballPos.y += ballVelY * dt
+    if not gameStarted:
+        displayMenu()
+        pygame.display.update()
+        if keys[pygame.K_SPACE]:
+            gameStarted = True 
+            resetGame()
+            startGame()
+        if keys[pygame.K_q]:
+            running = False
+        continue
+    
+    if winner is not None:
+        displayWinscreen(winner)
+        pygame.display.update()
+        if keys[pygame.K_r]:
+            resetGame()
+            startGame()
+        if keys[pygame.K_q]:
+            running = False
+        continue
+
+    if gameStarted:
+        ballPos.x += ballVelX * dt
+        ballPos.y += ballVelY * dt
 
     if ballPos.y - ballRadius <= 0:
         ballPos.y = ballRadius
@@ -106,8 +114,6 @@ while running:
 
     text = font.render(f"{player1Score} | {player2Score}", True, "white")
     screen.blit(text, (screenWidth // 2 - text.get_width() // 2, 20))
-    
-    keys = pygame.key.get_pressed()
 
     player1Accel = 0
     if keys[pygame.K_w]:
@@ -128,18 +134,28 @@ while running:
         ballPos.x = player1Pos.x + playerSize.x + ballRadius
         ballVelX = -ballVelX
         ballVelY = adjustBallVelocity(ballVelY, player1Vel)
-        ballVelY = clampBallVelocity(ballVelY, -700, 700)
+        ballVelY = clampBallVelocity(ballVelY, -900, 900)
+        
+        if keys[pygame.K_w]:
+            ballVelY -= 100
+        if keys[pygame.K_s]:
+            ballVelY += 100
 
     if BallIsColliding(player2Pos, playerSize, ballRadius, ballPos):
         ballPos.x = player2Pos.x - ballRadius
         ballVelX = -ballVelX
         ballVelY = adjustBallVelocity(ballVelY, player2Vel)
-        ballVelY = clampBallVelocity(ballVelY, -700, 700)
+        ballVelY = clampBallVelocity(ballVelY, -900, 900)
 
-    events = pygame.event.get()
-    for event in events:
-        if event.type == pygame.QUIT:
-            running = False
+        if keys[pygame.K_UP]:
+            ballVelY -= 100
+        if keys[pygame.K_DOWN]:
+            ballVelY += 100
+    
+    if player1Score == 3:
+        winner = "1"
+    if player2Score == 3:
+        winner = "2"
 
     pygame.display.update()
 
